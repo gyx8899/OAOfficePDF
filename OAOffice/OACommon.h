@@ -56,17 +56,17 @@
 #define kLABEL_HEIGHT       20.0f
 #define kCellHeaderHeight   30.0f
 
-#define kUserURL            @"http://192.168.182.4:80/api/pad/getUser"
-#define kTaskURL            @"http://192.168.182.4:80/api/getTasks/"
-#define kBaseURL            @"http://192.168.182.4:80/"
+//#define kUserURL            @"http://192.168.182.4:80/api/pad/getUser"
+//#define kTaskURL            @"http://192.168.182.4:80/api/getTasks/"
+//#define kBaseURL            @"http://192.168.182.4:80/"
 
 //#define kUserURL            @"http://192.168.69.242:80/api/pad/getUser"
 //#define kTaskURL            @"http://192.168.69.242:80/api/getTasks/"
 //#define kBaseURL            @"http://192.168.69.242:80/"
 
-//#define kUserURL            @"http://101.231.140.106:8080/api/pad/getUser"
-//#define kTaskURL            @"http://101.231.140.106:8080/api/getTasks/"
-//#define kBaseURL            @"http://101.231.140.106:8080/"
+#define kUserURL            @"http://101.231.140.106:8080/api/pad/getUser"
+#define kTaskURL            @"http://101.231.140.106:8080/api/getTasks/"
+#define kBaseURL            @"http://101.231.140.106:8080/"
 
 #define kDocumentPath       [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0]
 
@@ -89,6 +89,10 @@
 #define kMissiveAddr        @"missiveAddr"
 #define kUrgentLevel        @"urgentLevel"
 
-#define kPageSize           5
+#define kPageSize           15
+
+#define kLogErrorType       @"error"
+#define kLogInfoType        @"info"
+#define kLogType            @"type"
 
 #endif

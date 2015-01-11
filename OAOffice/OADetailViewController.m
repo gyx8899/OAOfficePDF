@@ -32,10 +32,11 @@
     NSIndexPath     *_selectedIndexPath;
     
     NSNumber        *_editState;
+    NSInteger       _badgeNumber;
     
     NSDictionary    *_itemDic;
     
-    UILabel         *_noItemsLabel;
+    UIView          *_nilItemsView;
     
     NSTimeInterval  _timeExpiredFile;
     
@@ -86,18 +87,19 @@
     [self initNaviTitle];
     [self initNaviColor];
     [self initRightBtn];
-//    [self initNoItemLabel];
-    
     
     // 2. Init var
-    _objectChanges = [NSMutableArray array];
-    _sectionChanges = [NSMutableArray array];
+    _objectChanges   = [NSMutableArray array];
+    _sectionChanges  = [NSMutableArray array];
     
     _timeExpiredFile = 60;//初始化为60s
     _openedDocument  = nil;
     _deletedDocument = nil;
+    _badgeNumber     = 0;
+    [UIApplication sharedApplication].applicationIconBadgeNumber = _badgeNumber;
+    [[UIApplication sharedApplication] cancelAllLocalNotifications];
     
-    _editState = @1;//初始化为1，表示非编辑状态
+    _editState       = @1;//初始化为1，表示非编辑状态
     _selectedIndexPath = nil;
     
     self.masterDelegate = (id)(OAMasterViewController *)[[self.splitViewController.viewControllers firstObject] topViewController];
@@ -107,6 +109,7 @@
     
     // 3. Init CollectionView
     [self initCollectionView];
+    [self initNoItemView];
     
     // 4.集成刷新控件
     [self addHeader];
@@ -129,8 +132,8 @@
         [[NSRunLoop  currentRunLoop] addTimer:pdfDelteTimer forMode:NSDefaultRunLoopMode];
         
         // 定时提交日志
-//        NSTimer *logSubmitTimer   =  [NSTimer scheduledTimerWithTimeInterval:60*60.0 target:self selector:@selector(submitLogInfoToServer) userInfo:nil repeats:YES];
-//        [[NSRunLoop  currentRunLoop] addTimer:logSubmitTimer forMode:NSDefaultRunLoopMode];
+        NSTimer *logSubmitTimer   =  [NSTimer scheduledTimerWithTimeInterval:60*60.0 target:self selector:@selector(submitLogInfoToServer) userInfo:nil repeats:YES];
+        [[NSRunLoop  currentRunLoop] addTimer:logSubmitTimer forMode:NSDefaultRunLoopMode];
         
         [[NSRunLoop currentRunLoop] run];
     });
@@ -142,6 +145,11 @@
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [self.collectionView reloadData];
 }
 
 
@@ -169,7 +177,6 @@
 
 - (void)initRightBtn
 {
-//    UIBarButtonItem *rightNavBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(editItemClicked)];
     UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
     btn.frame = CGRectMake(0, 0, 30, 30);
     [btn setImage:[UIImage imageNamed:@"User-Trash.png"] forState:UIControlStateNormal];
@@ -192,10 +199,12 @@
     
     // 3.刷新获取新Task
     [self getUnDoMission];
-    [self getDoneMission];
     
-    // 4.获取所有用户简单信息
-    [self getAllUserToPlist];
+    // 4.刷新已办公文
+    [self getDoneMissionWithPageSize:15 pageNum:1];
+    
+    // 5.获取会签选择人员列表(每次登陆时都获取一次，保证最新列表)
+    [OATools getAllUserToPlist];
 }
 
 - (void)initCollectionView
@@ -205,7 +214,7 @@
     
     OAPDFFlowLayout *flowLayout = [[OAPDFFlowLayout alloc] init];
     self.collectionView = [[UICollectionView alloc] initWithFrame:rect collectionViewLayout:flowLayout];
-    
+    self.collectionView.backgroundColor = [UIColor clearColor];
     self.collectionView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
     self.collectionView.delegate    = self;
     self.collectionView.dataSource  = self;
@@ -232,18 +241,37 @@
     // 4.单选
     self.collectionView.allowsSelection = YES;
     self.collectionView.allowsMultipleSelection = NO;
+    
 }
 
-- (void)initNoItemLabel
+- (void)initNoItemView
 {
-    _noItemsLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 200, kLABEL_HEIGHT*3)];
-    _noItemsLabel.center = CGPointMake(self.view.frame.size.width * 0.5, self.view.frame.size.height * 0.5);
-    _noItemsLabel.autoresizingMask = UIViewAutoresizingFlexibleTopMargin;
-    _noItemsLabel.textAlignment = NSTextAlignmentCenter;
-    _noItemsLabel.font = [UIFont systemFontOfSize:26.0f];
-    _noItemsLabel.textColor = [UIColor lightGrayColor];
-    _noItemsLabel.text = @"没有新文件";
-    [self.view addSubview:_noItemsLabel];
+    _nilItemsView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 130, 130+5+30)];
+    
+    UIImageView *iconView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 130, 130)];
+    iconView.image = [UIImage imageNamed:@"Icon-130"];
+    iconView.layer.masksToBounds = YES;
+    iconView.layer.cornerRadius = iconView.bounds.size.height/2;
+    iconView.layer.borderWidth = 3.0f;
+    iconView.layer.borderColor = [[UIColor grayColor] CGColor];
+    [_nilItemsView addSubview:iconView];
+    
+    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(0, 135, 80, 30)];
+    label.center = CGPointMake(iconView.center.x, iconView.center.y + iconView.frame.size.height * 0.5 + 5 + label.frame.size.height * 0.5);
+    label.textAlignment = NSTextAlignmentCenter;
+    label.font = [UIFont systemFontOfSize:18.0f];
+    label.textColor = [UIColor lightGrayColor];
+    label.layer.borderWidth = 1.0f;
+    label.layer.borderColor = [[UIColor lightGrayColor] CGColor];
+    label.layer.cornerRadius = 5;
+    label.text = @"暂无文件";
+    [_nilItemsView addSubview:label];
+    
+    _nilItemsView.center = CGPointMake(self.view.center.x, self.view.center.y - 80);
+    _nilItemsView.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
+    if ([[self.fetchedResultsController sections] count] == 0) {
+        [self.collectionView addSubview:_nilItemsView];
+    }
 }
 
 #pragma mark - Some base Mehtods
@@ -306,6 +334,7 @@
     
     // 2.Master title 显示用户名
     [self.masterDelegate refreashMasterTitleWithName:[[NSUserDefaults standardUserDefaults] objectForKey:kName]];
+    
     // 3.collectionView 刷新数据
     [self.collectionView reloadData];
 }
@@ -349,6 +378,9 @@
     // 4. 输出结果
     if ([entity isEqualToString:kOAPDFDocument]) {
         for (ReaderDocument *object in result) {
+            if ([object.fileTag isEqualToNumber:@1]) {
+                [self cancelNotificationWithObject:object.fileName andKey:object.guid];
+            }
             // 删除一条记录
             [self.managedObjectContext deleteObject:object];
             
@@ -365,6 +397,8 @@
 //                MyLog(@"Png Delete Error:%@",error.description);
 //            }
         }
+        
+        // 删除所有的PDF及签写的PNG图片
         NSArray *contents = [[NSFileManager new] contentsOfDirectoryAtPath:kDocumentPath error:NULL];
         NSEnumerator *e = [contents objectEnumerator];
         NSString *filename;
@@ -373,6 +407,8 @@
                 [[NSFileManager new] removeItemAtPath:[kDocumentPath stringByAppendingPathComponent:filename] error:NULL];
             }
         }
+        
+        [self showNilItemView];
     }else if ([entity isEqualToString:kOADoneMissive]){
         for (DoneMissive *missive in result) {
             [self.managedObjectContext deleteObject:missive];
@@ -383,10 +419,10 @@
     NSError *error;
     if ([self.managedObjectContext save:&error]) {
         NSString *info = [NSString stringWithFormat:@"OK:切换用户，原用户公文清除成功."];
-        [self newLogWithInfo:info time:[NSDate date]];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogInfoType];
     } else {
         NSString *info = [NSString stringWithFormat:@"Error:切换用户，原用户公文清除失败.%@",error.description];
-        [self newLogWithInfo:info time:[NSDate date]];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
     }
 }
 
@@ -400,9 +436,12 @@
                                       
                                       MyLog(@"Delete guid:%@ OK!\n",reader.guid);
                                       NSString *info = [NSString stringWithFormat:@"OK:过期公文-%@-删除成功.",reader.fileName];
-                                      [self newLogWithInfo:info time:[NSDate date]];
+                                      [OATools newLogWithInfo:info time:[NSDate date] type:kLogInfoType];
                                   }];
     
+    if ([[self.fetchedResultsController sections] count] == 0) {
+        [self.collectionView addSubview:_nilItemsView];
+    }
 }
 
 - (void)deletePDFWithArray:(NSMutableArray *)readerArray
@@ -412,6 +451,9 @@
     }
                                   completion:^(BOOL finished) {
                                   }];
+    if ([[self.fetchedResultsController sections] count] == 0) {
+        [self.collectionView addSubview:_nilItemsView];
+    }
 }
 
 
@@ -419,7 +461,6 @@
 
 - (void)splitViewController:(UISplitViewController *)splitController willHideViewController:(UIViewController *)viewController withBarButtonItem:(UIBarButtonItem *)barButtonItem forPopoverController:(UIPopoverController *)popoverController
 {
-//    barButtonItem.title = NSLocalizedString(@"Home", @"Master");
     barButtonItem.image = [UIImage imageNamed:@"User-Home.png"];
     [self.navigationItem setLeftBarButtonItem:barButtonItem animated:YES];
     self.masterPopoverController = popoverController;
@@ -465,9 +506,9 @@
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
 {
     id <NSFetchedResultsSectionInfo> sectionInfo = [self.fetchedResultsController sections][section];
-    if (0 == section) {
-        [UIApplication sharedApplication].applicationIconBadgeNumber = [sectionInfo numberOfObjects];
-    }
+//    if (0 == section) {
+//        [UIApplication sharedApplication].applicationIconBadgeNumber = [sectionInfo numberOfObjects];
+//    }
     return [sectionInfo numberOfObjects];
 }
 
@@ -502,15 +543,17 @@
         cell.deleteBtn.hidden = YES;
     }
     
-    // 7. Tag 标签
-    if ([object.urgencyLevel isEqualToString:@"急"]) {
-        cell.tagView.image = [UIImage imageNamed:@"File-Urgent.png"];
-    }else if ([object.urgencyLevel isEqualToString:@"加急"])
-    {
-        cell.tagView.image = [UIImage imageNamed:@"File-V-Urgent.png"];
-    }else{
-        cell.tagView.image = [UIImage imageNamed:@"File-Common.png"];
-    }
+    // 7. Tag 标签(未签有标签)
+//    if ([object.fileTag isEqualToNumber:@1]) {
+        if ([object.urgencyLevel isEqualToString:@"急"]) {
+            cell.tagView.image = [UIImage imageNamed:@"File-Urgent.png"];
+        }else if ([object.urgencyLevel isEqualToString:@"加急"])
+        {
+            cell.tagView.image = [UIImage imageNamed:@"File-V-Urgent.png"];
+        }else{
+            cell.tagView.image = [UIImage imageNamed:@"File-Common.png"];
+        }
+//    }
     
     UIImage *thumbImage = [UIImage imageWithData:[object valueForKey:kFileThumbImage]];
     if (!thumbImage) {
@@ -567,7 +610,9 @@
         {
             ReaderViewController *readerVC = [[ReaderViewController alloc] initWithReaderDocument:object];
             readerVC.delegate = self;
-            readerVC.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
+            readerVC.modalPresentationStyle = UIModalPresentationFullScreen;
+            readerVC.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
+
             [self presentViewController:readerVC animated:YES completion:^{
                 // 阅后即删除操作
                 _selectedIndexPath = indexPath;
@@ -580,7 +625,7 @@
 //                cell.pdfThumbView.layer.borderColor = [UIColor brownColor].CGColor;
 //                MyLog(@"点击开始下载！");
                 NSString *info = [NSString stringWithFormat:@"Error:公文-%@-（未下载）被点击，开始下载.",object.fileName];
-                [self newLogWithInfo:info time:[NSDate date]];
+                [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
                 
                 // 下载
                 [self downFileWithUrl:object.fileLink readerDocument:object];
@@ -589,6 +634,7 @@
             }
         }
     }else{
+        // 取消编辑状态
         [self editItemClicked];
     }
 }
@@ -607,7 +653,6 @@
 - (UICollectionViewLayoutAttributes *)finalLayoutAttributesForDisappearingItemAtIndexPath:(NSIndexPath *)indexPath
 {
     UICollectionViewLayoutAttributes *attributes = [self.collectionView layoutAttributesForItemAtIndexPath:indexPath];
-//    attributes.alpha = 0.0;
     return attributes;
 }
 
@@ -931,15 +976,6 @@
 - (void)documentDeleteInMOCWithTheDeleteDocument:(ReaderDocument *)reader
 {
     [ReaderDocument deleteInMOC:self.managedObjectContext object:reader];
-    
-//    [self removeObjectsWithPredicate:[NSString stringWithFormat:@"fileName CONTAINS '%@'",reader.fileName] withEntityName:kOAPDFDocument];
-//    [self.managedObjectContext deleteObject:reader];
-//    NSError *error = nil;
-//    if ([self.managedObjectContext save:&error]) {
-//        MyLog(@"删除成功");
-//    } else {
-//        MyLog(@"删除失败：%s %@", __FUNCTION__, error); assert(NO);
-//    }
 }
 
 - (void)documentDeleteInMOCWithTheDeleteArray:(NSMutableArray *)readerArray
@@ -955,6 +991,7 @@
     [self dismissViewControllerAnimated:NO completion:^{
         //4. 正在打开的文件为空；
         _openedDocument = nil;
+        // tag = 0 表示没有对文件进行签发，主动（点击退出按钮）退出到主页面
         if ([tag isEqualToNumber:@0]) {
             // 1. 更新文件标签
             // fileTag = @1 标签初始化
@@ -1000,7 +1037,7 @@
     [promptAlert show];
 }
 
-#pragma mark - UIAlertView Delegate 右顶角按钮提示
+#pragma mark - UIAlertView Delegate 右顶角删除按钮提示
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
     switch (buttonIndex) {
@@ -1008,6 +1045,10 @@
         {
             // 跳转到登录界面；
 //            [self presentLoginView];
+            //
+            if ([_deletedDocument.fileTag isEqualToNumber:@1]) {
+                [self cancelNotificationWithObject:_deletedDocument.fileName andKey:_deletedDocument.guid];
+            }
             // 删除公文
             [self deletePDFWithObject:_deletedDocument];
             // 当一个文件被删除成功后，取消编辑（删除）模式
@@ -1040,6 +1081,9 @@
         object.fileLink         = [NSString stringWithFormat:@"%@%@",kBaseURL,[missive valueForKey:kMissiveAddr]];
         object.taskStartTime    = [missive valueForKey:kMissiveDoneTime];
         assert(object != nil); // Object insert failure should never happen
+        
+        [self hideNilItemView];
+        
         [self.collectionView reloadData];
         
         // 3.公文后台下载文件
@@ -1070,6 +1114,11 @@
         // 进入刷新状态就会回调这个Block
         [vc getUnDoMission];
         [vc fileToDelete];
+        if ([vc.collectionView numberOfSections] == 0) {
+            [vc showNilItemView];
+        }else{
+            [vc hideNilItemView];
+        }
         
         [vc.collectionView reloadData];
         // 结束刷新
@@ -1086,6 +1135,12 @@
         // 进入刷新状态就会回调这个Block
         [vc getUnDoMission];
         [vc fileToDelete];
+        
+        if ([vc.collectionView numberOfSections] == 0) {
+            [vc showNilItemView];
+        }else{
+            [vc hideNilItemView];
+        }
         
         [vc.collectionView reloadData];
         // 结束刷新
@@ -1155,21 +1210,21 @@
                 }
                 
                 NSString *info = [NSString stringWithFormat:@"OK:公文-%@-下载成功.%@",readerPDF.fileName,linkUrl];
-                [self newLogWithInfo:info time:[NSDate date]];
+                [OATools newLogWithInfo:info time:[NSDate date] type:kLogInfoType];
             }else{
                 //
                 cell.pValue.hidden = NO;
                 cell.pValue.text = @"公文不存在!";
                 
                 NSString *info = [NSString stringWithFormat:@"Error:下载公文,公文不存在错误。%@",linkUrl];
-                [self newLogWithInfo:info time:[NSDate date]];
+                [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
             }
             [self.collectionView reloadData];
         }];
         [operation start];
     }else{
         NSString *info = [NSString stringWithFormat:@"Error:文件下载中，网络中断错误。%@",linkUrl];
-        [self newLogWithInfo:info time:[NSDate date]];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
     }
 }
 
@@ -1218,7 +1273,7 @@
     // 创建一个本地推送
     UILocalNotification *notification = [[UILocalNotification alloc] init];
     //设置10秒之后
-    NSDate *pushDate = [NSDate dateWithTimeIntervalSinceNow:0];
+    NSDate *pushDate = [NSDate dateWithTimeIntervalSinceNow:0.1];
     if (notification != nil) {
         // 设置推送时间
         notification.fireDate = pushDate;
@@ -1230,20 +1285,22 @@
         notification.soundName = UILocalNotificationDefaultSoundName;
         // 推送内容
         notification.alertBody = [NSString stringWithFormat:@"您有新的公文：%@",objectName];
-        // 推送时小图标的设置，PS:这个东西不知道还有啥用
+        // 推送时小图标的设置，
         notification.alertLaunchImage=[[NSBundle mainBundle]pathForResource:@"Icon-Small" ofType:@"png"];
         // 显示在icon上的红色圈中的数子
-//        _badgeNumber++;
+        _badgeNumber++;
 //        notification.applicationIconBadgeNumber = _badgeNumber;
-        notification.applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber;
+//        notification.applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber;
+        [UIApplication sharedApplication].applicationIconBadgeNumber = _badgeNumber;
+        
         NSDictionary *info = [NSDictionary dictionaryWithObject:objectName forKey:keyGUID];
         notification.userInfo = info;
         // 添加推送到UIApplication
         UIApplication *app = [UIApplication sharedApplication];
         // 计划本地推送
-//        [app scheduleLocalNotification:notification];
+        [app scheduleLocalNotification:notification];
         // 即时推送
-        [app presentLocalNotificationNow:notification];
+//        [app presentLocalNotificationNow:notification];
     }
 }
 
@@ -1258,8 +1315,8 @@
         NSString *inKey = [[dict objectForKey:keyGUID] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
         if ([inKey isEqualToString:objectName]) {
             [app cancelLocalNotification:localNotification];
-//            _badgeNumber--;
-//            [UIApplication sharedApplication].applicationIconBadgeNumber = _badgeNumber;
+            _badgeNumber--;
+            [UIApplication sharedApplication].applicationIconBadgeNumber = _badgeNumber;
             break;
         }
     }
@@ -1291,53 +1348,53 @@
             NSDictionary *result = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableLeaves error:nil];
             // 获取未办公文到词典中，与最新公文列表对比，
             NSMutableDictionary *unReadDic = [NSMutableDictionary dictionary];
-            for (ReaderDocument *pdf in [ReaderDocument allInMOC:self.managedObjectContext withTag:@1]) {
+            NSArray *unReadArray = [ReaderDocument allInMOC:self.managedObjectContext withTag:@1];
+            if ([unReadArray count] > 0) {
+                [self hideNilItemView];
+            }
+            for (ReaderDocument *pdf in unReadArray) {
                 if (pdf.taskInfo) {
                     NSDictionary *taskInfoDic = [NSJSONSerialization JSONObjectWithData:pdf.taskInfo options:NSJSONReadingMutableLeaves error:nil];
                     [unReadDic setObject:pdf forKey:[taskInfoDic objectForKey:@"id"]];
                 }
             }
             
-            for (int i = 0; i < [(NSArray *)result count]; i++) {
+            BOOL newUnReadFile = NO;
+            for (int i = 0; i < [(NSArray *)result count]; i++)
+            {
                 // 1.判断文件中是否已存在该公文
                 NSDictionary *taskInfoDic = (NSDictionary *)[(NSArray *)result objectAtIndex:i];
                 NSString *isPadDealMissive = [taskInfoDic objectForKey:@"isPadDealMissive"];
-                if (![unReadDic objectForKey:[taskInfoDic objectForKey:@"id"]] && [isPadDealMissive isEqualToString:@"yes"]) {
+                NSString *missiveTitle = [taskInfoDic objectForKey:@"missiveTitle"];
+                if (![unReadDic objectForKey:[taskInfoDic objectForKey:@"id"]] && [isPadDealMissive isEqualToString:@"yes"] && ![missiveTitle isKindOfClass:[NSNull class]] && ([missiveTitle length]>0))
+                {
                     // 公文名非空，下载公文；
-                    NSString *missiveTitle = [taskInfoDic objectForKey:@"missiveTitle"];
-                    if (![missiveTitle isKindOfClass:[NSNull class]] && ([missiveTitle length]>0)) {
-//                        // 2.判断公文是否存在（不存在－“文件不存在.”）
-//                        AFHTTPRequestOperationManager *managerPdf = [AFHTTPRequestOperationManager manager];
-//                        [managerPdf.requestSerializer setValue:authorizationHeader forHTTPHeaderField:@"Authorization"];
-//                        
-//                        [managerPdf GET:downLink parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
-//                        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-////                            MyLog(@"%@",operation.responseString);//1:ok 2:not exists
-//                            if([operation.responseString isEqualToString:@"ok"]){
-                                // 3.新建公文；
-                                NSString *fileName = [NSString stringWithFormat:@"%@.pdf",missiveTitle];
-                                ReaderDocument *object  = [ReaderDocument initOneInMOC:self.managedObjectContext name:fileName tag:@1];
-                                assert(object != nil); // Object insert failure should never happen
-                                object.taskInfo         = [NSJSONSerialization dataWithJSONObject:taskInfoDic options:NSJSONWritingPrettyPrinted error:nil];
-                                object.fileLink         = [NSString stringWithFormat:@"%@download/pdf/%@/%@/%@.pdf",kBaseURL,[taskInfoDic objectForKey:@"missiveType"],[taskInfoDic objectForKey:@"processInstanceId"],[taskInfoDic objectForKey:@"lastTaskId"]];
-                                object.fileId           = [NSString stringWithFormat:@"%@",[taskInfoDic objectForKey:@"id"]];
-                                object.urgencyLevel     = [taskInfoDic objectForKey:@"urgencyLevel"];
-                                object.missiveType      = [taskInfoDic objectForKey:@"missiveType"];
-                                object.taskName         = [taskInfoDic objectForKey:@"name"];
-                        
-                                NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-                                [dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
-                                NSDate *taskStartTime   = [dateFormatter dateFromString:[taskInfoDic valueForKey:kTaskStartTime]];
-                                object.taskStartTime    = taskStartTime;
-                                [self.collectionView reloadData];
-                                
-                                // 3.公文后台下载文件
-                                dispatch_async(dispatch_get_global_queue(0, 0), ^{
-                                    [self downFileWithUrl:object.fileLink readerDocument:object];
-                                });
-//                            }
-//                        }];
-                    }
+                    // 3.新建公文；
+                    NSString *fileName = [NSString stringWithFormat:@"%@.pdf",missiveTitle];
+                    ReaderDocument *object  = [ReaderDocument initOneInMOC:self.managedObjectContext name:fileName tag:@1];
+                    assert(object != nil); // Object insert failure should never happen
+                    object.taskInfo         = [NSJSONSerialization dataWithJSONObject:taskInfoDic options:NSJSONWritingPrettyPrinted error:nil];
+                    object.fileLink         = [NSString stringWithFormat:@"%@download/pdf/%@/%@/%@.pdf",kBaseURL,[taskInfoDic objectForKey:@"missiveType"],[taskInfoDic objectForKey:@"processInstanceId"],[taskInfoDic objectForKey:@"lastTaskId"]];
+                    object.fileId           = [NSString stringWithFormat:@"%@",[taskInfoDic objectForKey:@"id"]];
+                    object.urgencyLevel     = [taskInfoDic objectForKey:@"urgencyLevel"];
+                    object.missiveType      = [taskInfoDic objectForKey:@"missiveType"];
+                    object.taskName         = [taskInfoDic objectForKey:@"name"];
+                    
+                    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+                    [dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+                    NSDate *taskStartTime   = [dateFormatter dateFromString:[taskInfoDic valueForKey:kTaskStartTime]];
+                    object.taskStartTime    = taskStartTime;
+                    
+                    // 有公文的时候，_nilItemsView隐藏
+                    [self hideNilItemView];
+                    
+                    [self.collectionView reloadData];
+                    
+                    // 3.公文后台下载文件
+                    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+                        [self downFileWithUrl:object.fileLink readerDocument:object];
+                    });
+                    newUnReadFile = YES;
                 }else
                 {
                     [unReadDic removeObjectForKey:[taskInfoDic objectForKey:@"id"]];
@@ -1353,10 +1410,9 @@
                     [self cancelNotificationWithObject:pdf.fileName andKey:pdf.guid];
                 }
             }
-            
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
             NSString *info = [NSString stringWithFormat:@"Error:获取最新公文失败错误.%@",error.description];
-            [self newLogWithInfo:info time:[NSDate date]];
+            [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
             
             NSString *errorFailingURLKey = [[error.userInfo objectForKey:@"NSErrorFailingURLKey"] absoluteString];
             NSRange range = [errorFailingURLKey rangeOfString:@"login"];
@@ -1373,13 +1429,13 @@
                 [userDefaults synchronize];
                 
                 NSString *info = [NSString stringWithFormat:@"Error:用户验证信息已过期，请重新登录.%@",error.description];
-                [self newLogWithInfo:info time:[NSDate date]];
+                [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
             }
         }];
     }
 }
 
-- (void)getDoneMission
+- (void)getDoneMissionWithPageSize:(int)pageSize pageNum:(int)pageNum
 {
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     NSString *userName = [userDefaults objectForKey:kUserName];
@@ -1387,8 +1443,6 @@
     __block NSString *authorizationHeader = [userDefaults objectForKey:kAuthorizationHeader];
     // 用户名和密码非空和网络OK时，获取最新任务列表
     if (userName && [netConnect isEqualToString:@"OK"] && authorizationHeader) {
-        int pageSize = kPageSize;
-        int pageNum  = 1;
         NSString *serverURL = [[NSString stringWithFormat:@"%@api/ipad/getDoneMissive/%@/%d/%d",kBaseURL,userName,pageSize,pageNum] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];//转码成UTF-8  否则可能会出现错
         AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
         [manager.requestSerializer setValue:authorizationHeader forHTTPHeaderField:@"Authorization"];
@@ -1408,12 +1462,12 @@
             
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
             NSString *info = [NSString stringWithFormat:@"Error:获取最新公文失败错误.%@",error.description];
-            [self newLogWithInfo:info time:[NSDate date]];
+            [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
         }];
     }
 }
 
-#pragma mark - Notification for AFNetworkingOperationDidFinishNotification
+#pragma mark - Notification for AFNetworkingOperationDidFinishNotification && UIApplicationDidEnterBackgroundNotification
 - (void)addNetworkObserver
 {
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -1441,55 +1495,22 @@
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(presentLoginView) name:UIApplicationDidEnterBackgroundNotification object:nil];
 }
 
-#pragma mark - AllUserList
-- (void)getAllUserToPlist
+#pragma mark - No Document Show nilItemView
+- (void)showNilItemView
 {
-    dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-        NSString *plistPath = [userDefaults objectForKey:kUserPlist];
-        __block NSMutableArray *docPlist = [[NSMutableArray alloc] initWithContentsOfFile:plistPath];
-        if (!docPlist) {
-            docPlist = [NSMutableArray array];
-            
-            NSString *authorizationHeader = [userDefaults objectForKey:kAuthorizationHeader];
-            NSString *serverURL = [[NSString stringWithFormat:@"%@",kUserURL] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];//转码成UTF-8  否则可能会出现错
-            AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
-            [manager.requestSerializer setValue:authorizationHeader forHTTPHeaderField:@"Authorization"];
-            [manager.requestSerializer setValue:@"application/json" forHTTPHeaderField:@"content-type"];
-            manager.responseSerializer = [AFJSONResponseSerializer serializer];
-            
-            [manager GET:serverURL parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
-                //解析返回的JSON数据
-                NSData *responseData = [NSJSONSerialization dataWithJSONObject:responseObject options:NSJSONWritingPrettyPrinted error:nil];
-                NSArray *result = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableLeaves error:nil];
-                docPlist = [NSMutableArray arrayWithArray:result];
-                //写入文件
-                [docPlist writeToFile:plistPath atomically:YES];
-            } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-                NSString *info = [NSString stringWithFormat:@"Error:获取最新用户组人员信息失败错误.%@",error.description];
-                [self newLogWithInfo:info time:[NSDate date]];
-            }];
-        }
-    });
+    // 有公文的时候，_nilItemsView隐藏
+    if (!_nilItemsView.superview) {
+        [self.collectionView addSubview:_nilItemsView];
+    }
+    [[UIApplication sharedApplication] cancelAllLocalNotifications];
 }
 
-#pragma mark - Add log info to plist
-- (void)newLogWithInfo:(NSString *)info time:(NSDate *)currentDate
+- (void)hideNilItemView
 {
-    dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-        NSString *userName   = [userDefaults objectForKey:kUserName];
-        NSString *deviceUUID = [userDefaults objectForKey:kDeviceInfo];
-        NSString *plistPath  = [userDefaults objectForKey:kPlistPath];
-        NSDictionary *logDic = [NSDictionary dictionaryWithObjectsAndKeys:userName,kUserName,deviceUUID,kDeviceInfo,currentDate,kLogTime,info,kLogInfo, nil];
-        NSMutableDictionary *docPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:plistPath];
-        if (!docPlist) {
-            docPlist = [NSMutableDictionary dictionary];
-        }
-        [docPlist setObject:logDic forKey:[NSString stringWithFormat:@"%@",currentDate]];
-        //写入文件
-        [docPlist writeToFile:plistPath atomically:YES];
-    });
+    // 没有公文的时候，_nilItemsView显示
+    if (_nilItemsView.superview) {
+        [_nilItemsView removeFromSuperview];
+    }
 }
 
 #pragma mark - Submit log to server
@@ -1506,7 +1527,7 @@
         NSDictionary *nullDic  = [NSDictionary dictionary];
         [nullDic writeToFile:plistPath atomically:YES];
         
-        NSString *submitLogURL = [NSString stringWithFormat:@"%@api/",kBaseURL];
+        NSString *submitLogURL = [NSString stringWithFormat:@"%@api/pad/log",kBaseURL];
         AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
         manager.responseSerializer.acceptableContentTypes = [NSSet setWithObject:@"text/html"];
         manager.requestSerializer  = [AFHTTPRequestSerializer  serializer];
@@ -1515,13 +1536,15 @@
         id key;
         while ((key = [enumerator nextObject])) {
             /* code that uses the returned key */
-            NSDictionary *para = [docPlist objectForKey:key];
+            NSString *logMessage   = [[docPlist objectForKey:key] description];
+            NSString *logIndex     = [[docPlist objectForKey:key] objectForKey:kLogType];
+            NSDictionary *para     = [NSDictionary dictionaryWithObjectsAndKeys:logMessage,@"logMessage",logIndex,@"logIndex", nil];
             // 网络访问是异步的,回调是主线程的,因此程序员不用管在主线程更新UI的事情
             [manager POST:submitLogURL parameters:para success:^(AFHTTPRequestOperation *operation, id responseObject) {
                 [docPlist removeObjectForKey:key];
             } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
                 NSString *info = [NSString stringWithFormat:@"Error:日志信息提交失败错误.%@",error.description];
-                [self newLogWithInfo:info time:[NSDate date]];
+                [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
             }];
         }
         // 发送失败的重新存入Plist文件中

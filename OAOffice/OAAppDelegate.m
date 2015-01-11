@@ -114,6 +114,10 @@
              // Replace this implementation with code to handle the error appropriately.
              // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development. 
             NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+            
+            NSString *info = [NSString stringWithFormat:@"Error:saveContext错误.%@",error.description];
+            [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
+            
             abort();
         } 
     }
@@ -186,6 +190,10 @@
          
          */
         NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+        
+        NSString *info = [NSString stringWithFormat:@"Error:persistentStoreCoordinator错误.%@",error.description];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
+        
         abort();
     }    
     
@@ -267,7 +275,7 @@
 {
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
-    NSString *plistPath = [documentsDirectory stringByAppendingPathComponent:@"Log.plist"];
+    NSString *plistPath = [documentsDirectory stringByAppendingPathComponent:@"UserLog.plist"];
     NSString *userPlist = [documentsDirectory stringByAppendingPathComponent:@"UserGroup.plist"];
     NSString *userInfo  = [documentsDirectory stringByAppendingPathComponent:@"UserInfo.plist"];
     

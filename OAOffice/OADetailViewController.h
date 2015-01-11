@@ -26,6 +26,4 @@
 
 @property (weak,   nonatomic) id<RefreashMasterDoneMission> masterDelegate;
 
-- (void)newLogWithInfo:(NSString *)info time:(NSDate *)currentDate;
-
 @end

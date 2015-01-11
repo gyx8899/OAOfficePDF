@@ -300,6 +300,8 @@
     if ([inMOC save:&error]) {
         return object;
     }else{
+        NSString *info = [NSString stringWithFormat:@"Error:新建公文方法initOneInMOC错误.%@",error.description];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
         MyLog(@"%s %@", __FUNCTION__, error); assert(NO);
         return nil;
     }
@@ -329,7 +331,7 @@
         
         //        object.fileURL = [path stringByAppendingPathComponent:object.fileName];
         object.fileURL = [path stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.pdf",object.fileId]];
-        MyLog(@"fileURL:%@",object.fileURL);
+//        MyLog(@"fileURL:%@",object.fileURL);
         
         NSFileManager* fileMngr = [[NSFileManager alloc]init];
         NSDictionary* attributes = [fileMngr attributesOfItemAtPath:object.fileURL error:nil];
@@ -353,6 +355,8 @@
     if ([inMOC save:&error]) {
         MyLog(@"Complement:修改成功");
     }else{
+        NSString *info = [NSString stringWithFormat:@"Error:补充公文信息方法complementInMOC错误.%@",error.description];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
         MyLog(@"%s %@", __FUNCTION__, error); assert(NO);
     }
 }
@@ -398,6 +402,8 @@
     if ([inMOC save:&error]) {
         MyLog(@"Refreash:修改成功");
     }else{
+        NSString *info = [NSString stringWithFormat:@"Error:刷新公文信息方法refreashInMOC错误.%@",error.description];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
         MyLog(@"%s %@", __FUNCTION__, error); assert(NO);
     }
 }
@@ -495,12 +501,12 @@
             MyLog(@"Png Delete Error:%@",error.description);
         }
     }
-    NSError *error = nil;
-    if ([inMOC save:&error]) {
-        MyLog(@"删除成功");
-    } else {
-        MyLog(@"删除失败：%s %@", __FUNCTION__, error); assert(NO);
-    }
+//    NSError *error = nil;
+//    if ([inMOC save:&error]) {
+//        MyLog(@"删除成功");
+//    } else {
+//        MyLog(@"删除失败：%s %@", __FUNCTION__, error); assert(NO);
+//    }
     
 }
 

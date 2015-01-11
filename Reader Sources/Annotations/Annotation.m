@@ -57,7 +57,7 @@
     
     CGRect newTextFrame = self.rect;// 绘制text时，没有InSet边框，所以要改变其Frame才能与实际的坐标相同
     newTextFrame.origin.x += 5;
-    newTextFrame.origin.y += 7;
+    newTextFrame.origin.y += 7.22;
 //    CGFloat x = self.rect.origin.x;
 //    CGFloat y = self.rect.origin.y + self.font.pointSize;
     [self.text drawInRect:newTextFrame withAttributes:@{NSFontAttributeName:self.font}];

@@ -74,8 +74,6 @@
 
 	BOOL ignoreDidScroll;
     
-    UIActivityIndicatorView *activityIV;
-    
     UIPopoverController *_popover;
     
     NSString *selectedUser;
@@ -299,6 +297,7 @@
 	{
 //		[delegate dismissReaderViewController:self]; // Dismiss the ReaderViewController
         [delegate dismissReaderViewController:self withDocument:document withTag:@0]; // Dismiss the ReaderViewController
+//        [self.navigationController popToRootViewControllerAnimated:YES];
 	}
 	else // We have a "Delegate must respond to -dismissReaderViewController:" error
 	{
@@ -363,6 +362,7 @@
     // （部分流程中，需要选人）初始化选择用户
     selectedUser = @"";
     _alertSelectedIndex = -1;
+//    [self.navigationController setNavigationBarHidden:YES];
     
 	UIView *fakeStatusBar = nil;
     CGRect viewRect = self.view.bounds; // View bounds
@@ -413,7 +413,6 @@
     annotateToolbar = [[ReaderAnnotateToolbar alloc] initWithFrame:toolbarRect]; // At top for annotating
     annotateToolbar.backgroundColor = kThemeColor;
     
-//    NSDictionary *taskInfoDic = [NSJSONSerialization JSONObjectWithData:document.taskInfo options:NSJSONReadingMutableLeaves error:nil];
     annotateToolbar.titleLabel.text = document.taskName;
     annotateToolbar.delegate = self;
     //hidden by default
@@ -796,6 +795,7 @@
     if ([delegate respondsToSelector:@selector(dismissReaderViewController:withDocument:withTag:)] == YES)
     {
         [delegate dismissReaderViewController:self withDocument:document withTag:@0]; // Dismiss the ReaderViewController
+//        [self.navigationController popToRootViewControllerAnimated:YES];
     }
     else // We have a "Delegate must respond to -dismissReaderViewController: error"
     {
@@ -953,7 +953,7 @@
 
 - (void)tappedInToolbar:(ReaderMainToolbar *)toolbar annotateButton:(UIButton *)button
 {
-//    [self setAnnotationMode:AnnotationViewControllerType_Sign];
+//    [self setAnnotationMode:AnnotationViewControllerType_EPen];
     [self setAnnotationMode:AnnotationViewControllerType_None];
     [self startAnnotation];
 }
@@ -990,7 +990,7 @@
     if ([self.annotationController.annotationType isEqualToString:AnnotationViewControllerType_Sign]) {
         [self setAnnotationMode:AnnotationViewControllerType_None];
     } else {
-        [self startAnnotation];
+        [self movePage];
         [self setAnnotationMode:AnnotationViewControllerType_Sign];
     }
 }
@@ -1000,7 +1000,7 @@
     if ([self.annotationController.annotationType isEqualToString:AnnotationViewControllerType_RedPen]) {
         [self setAnnotationMode:AnnotationViewControllerType_None];
     } else {
-        [self startAnnotation];
+        [self movePage];
         [self setAnnotationMode:AnnotationViewControllerType_RedPen];
     }
 }
@@ -1010,7 +1010,7 @@
     if ([self.annotationController.annotationType isEqualToString:AnnotationViewControllerType_Erase]) {
         [self setAnnotationMode:AnnotationViewControllerType_None];
     } else {
-        [self startAnnotation];
+        [self movePage];
         [self setAnnotationMode:AnnotationViewControllerType_Erase];
     }
 }
@@ -1020,7 +1020,7 @@
     if ([self.annotationController.annotationType isEqualToString:AnnotationViewControllerType_Text]) {
         [self setAnnotationMode:AnnotationViewControllerType_None];
     } else {
-        [self startAnnotation];
+        [self movePage];
         [self setAnnotationMode:AnnotationViewControllerType_Text];
     }
 }
@@ -1030,7 +1030,7 @@
     if ([self.annotationController.annotationType isEqualToString:AnnotationViewControllerType_EPen]) {
         [self setAnnotationMode:AnnotationViewControllerType_None];
     } else {
-        [self startAnnotation];
+        [self movePage];
         [self setAnnotationMode:AnnotationViewControllerType_EPen];
     }
 }
@@ -1040,7 +1040,7 @@
     if ([self.annotationController.annotationType isEqualToString:AnnotationViewControllerType_ESign]) {
         [self setAnnotationMode:AnnotationViewControllerType_None];
     } else {
-        [self startAnnotation];
+//        [self startAnnotation];
         NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
         NSString *base64Img = [userDefaults objectForKey:kESignImage];
         if (!base64Img||[base64Img length]==0) {
@@ -1084,6 +1084,13 @@
     [self.annotationController moveToPage:[document.pageNumber intValue] contentView:view];
     
     [self.view insertSubview:self.annotationController.view belowSubview:annotateToolbar];
+}
+
+- (void) movePage {
+    ReaderContentView *view = [contentViews objectForKey:document.pageNumber];
+    if ([self.annotationController moveToPage:[document.pageNumber intValue] contentView:view]) {
+        [self.view insertSubview:self.annotationController.view belowSubview:annotateToolbar];
+    }
 }
 
 - (void) cancelAnnotation {
@@ -1238,6 +1245,7 @@
 {
     // 退出文档
     [delegate dismissReaderViewController:self withDocument:document withTag:@2]; // Dismiss the ReaderViewController
+//    [self.navigationController popToRootViewControllerAnimated:YES];
 }
 
 #pragma mark UIAlertViewDelegate methods
@@ -1296,29 +1304,10 @@
     [promptAlert show];
 }
 
-#pragma mark - Add log info to plist
-- (void)newLogWithInfo:(NSString *)info time:(NSDate *)currentDate
-{
-    dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-        NSString *userName = [userDefaults objectForKey:kUserName];
-        NSString *deviceUUID = [userDefaults objectForKey:kDeviceInfo];
-        NSString *plistPath = [userDefaults objectForKey:kPlistPath];
-        NSDictionary *logDic = [NSDictionary dictionaryWithObjectsAndKeys:userName,kUserName,deviceUUID,kDeviceInfo,currentDate,kLogTime,info,kLogInfo, nil];
-        NSMutableDictionary *docPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:plistPath];
-        if (!docPlist) {
-            docPlist = [NSMutableDictionary dictionary];
-        }
-        [docPlist setObject:logDic forKey:[NSString stringWithFormat:@"%@",currentDate]];
-        //写入文件
-        [docPlist writeToFile:plistPath atomically:YES];
-    });
-}
-
 #pragma mark - TextKeyboardNotificationDelegate
 - (void)keyboardWillShow:(CGFloat )offset
 {
-    [UIView animateWithDuration:0.05 animations:^{
+    [UIView animateWithDuration:0.3 animations:^{
         
         CGRect newAnnoFrame = self.annotationController.view.frame;
         newAnnoFrame.origin.y = newAnnoFrame.origin.y - offset;
@@ -1336,7 +1325,7 @@
 
 - (void)keyboardDidHidden:(CGFloat )offset
 {
-    [UIView animateWithDuration:0.005 animations:^{
+    [UIView animateWithDuration:0.2 animations:^{
         
         CGRect newAnnoFrame = self.annotationController.view.frame;
         newAnnoFrame.origin.y = newAnnoFrame.origin.y + offset;
@@ -1352,42 +1341,6 @@
     }];
 }
 
-#pragma mark - getAllUser
-
-- (NSMutableArray *)getAllUser
-{
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSString *plistPath = [userDefaults objectForKey:kUserPlist];
-    __block NSMutableArray *docPlist = [[NSMutableArray alloc] initWithContentsOfFile:plistPath];
-    if (!docPlist) {
-        docPlist = [NSMutableArray array];
-        
-        NSString *authorizationHeader = [userDefaults objectForKey:kAuthorizationHeader];
-        NSString *serverURL = [[NSString stringWithFormat:@"%@",kUserURL] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];//转码成UTF-8  否则可能会出现错
-        AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
-        [manager.requestSerializer setValue:authorizationHeader forHTTPHeaderField:@"Authorization"];
-        [manager.requestSerializer setValue:@"application/json" forHTTPHeaderField:@"content-type"];
-        manager.responseSerializer = [AFJSONResponseSerializer serializer];
-        
-        [manager GET:serverURL parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
-            // 解析返回的JSON数据
-            NSData *responseData = [NSJSONSerialization dataWithJSONObject:responseObject options:NSJSONWritingPrettyPrinted error:nil];
-            NSArray *result3 = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableLeaves error:nil];
-            docPlist = [NSMutableArray arrayWithArray:result3];
-            //写入文件
-            [docPlist writeToFile:plistPath atomically:YES];
-        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-            NSString *info = [NSString stringWithFormat:@"Error:获取最新用户组人员信息失败错误.%@",error.description];
-            [self newLogWithInfo:info time:[NSDate date]];
-        }];
-    }
-    if (docPlist) {
-        return docPlist;
-    }else{
-        return nil;
-    }
-}
-
 #pragma mark - showUsers
 - (void)showUserListPopover
 {
@@ -1395,7 +1348,7 @@
     NSString *plistPath = [userDefaults objectForKey:kUserPlist];
     NSMutableArray *docPlist = [[NSMutableArray alloc] initWithContentsOfFile:plistPath];
     if ([docPlist count] == 0) {
-        docPlist = [self getAllUser];
+        [OATools getAllUserToPlist];
     }
     if ([docPlist count]>0) {
         OAUserListVC *userList = [[OAUserListVC alloc] init];
@@ -1411,7 +1364,9 @@
         [[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(screenRotate) name:UIDeviceOrientationDidChangeNotification object:nil];
     }else{
-        [self showAlertTitle:@"用户组人员获取失败" message:@"请重试"];
+        NSString *info = [NSString stringWithFormat:@"Error:用户组人员获取失败,重试."];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
+        [self showAlertTitle:@"用户组人员获取失败" message:@"再试一次"];
     }
 }
 
@@ -1458,7 +1413,7 @@
     // Sign png的文件路径filePath
     NSString *cacheDirectory    = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
     NSString *signPngName       = [NSString stringWithFormat:@"%@.png",document.fileId];
-    NSString *filePath          = [cacheDirectory stringByAppendingPathComponent:signPngName]; //Add the file name
+    NSString *filePath          = [cacheDirectory stringByAppendingPathComponent:signPngName];
     NSFileManager *fileManager  = [NSFileManager defaultManager];
     
     if ([fileManager fileExistsAtPath:filePath]) {
@@ -1494,12 +1449,6 @@
 }
 
 #pragma mark - Upload Sign Png
-- (NSString *)getAuthorizationWithUserName:(NSString *)userName password:(NSString *)pwd
-{
-    NSData *data = [[NSString stringWithFormat:@"%@:%@",userName,pwd] dataUsingEncoding:NSUTF8StringEncoding];
-    NSString *result = [NSString stringWithFormat:@"Basic %@",[data base64EncodedStringWithOptions:0]];
-    return result;
-}
 
 - (void)uploadPNG:(NSString *)taskValue path:(NSString *)filePath
 {
@@ -1514,30 +1463,22 @@
         NSString *missiveType   = [taskInfoDic objectForKey:@"missiveType"];
         NSString *processDeID   = [taskInfoDic objectForKey:@"processDefinitionId"];
         NSString *missiveVersion= [taskInfoDic objectForKey:@"missiveVersion"];
-        
-        NSString *serverURL = [NSString stringWithFormat:@"%@upload/img/%@/%@/%@/%@/%@",kBaseURL,missiveType,processDeID,instanceId,missiveVersion,taskId];
-        NSLog(@"Upload PNG URL:%@",serverURL);
-        
-        NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-        NSString *userName = [userDefaults objectForKey:kUserName];
-        NSString *password = [userDefaults objectForKey:kPassword];
+        NSString *serverURL     = [NSString stringWithFormat:@"%@upload/img/%@/%@/%@/%@/%@",kBaseURL,missiveType,processDeID,instanceId,missiveVersion,taskId];
         
         [MBProgressHUD showHUDAddedTo:self.view bgColor:kThemeColor tintColor:[UIColor whiteColor] labelText:@"提交中..." animated:YES];
         
         // 本地上传给服务器时,没有确定的URL,不好用MD5的方式处理
         AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
         manager.responseSerializer = [AFHTTPResponseSerializer serializer];
-        [manager.requestSerializer setValue:[self getAuthorizationWithUserName:userName password:password] forHTTPHeaderField:@"Authorization"];
+        [manager.requestSerializer setValue:[[NSUserDefaults standardUserDefaults] objectForKey:kAuthorizationHeader] forHTTPHeaderField:@"Authorization"];
         [manager.requestSerializer setValue:@"application/json" forHTTPHeaderField:@"content-type"];
         [manager POST:serverURL parameters:nil constructingBodyWithBlock:^(id<AFMultipartFormData> formData) {
-            
             [formData appendPartWithFileData:image name:@"files" fileName:signPngName mimeType:@"image/png"];
             
         } success:^(AFHTTPRequestOperation *operation, id responseObject) {
-            NSLog(@"Upload png OK");
             NSString *result = [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding];
             NSString *info = [NSString stringWithFormat:@"OK:图片上传成功.%@",result];
-            [self newLogWithInfo:info time:[NSDate date]];
+            [OATools newLogWithInfo:info time:[NSDate date] type:kLogInfoType];
             
             // 上传签写PNG OK后，结束本文件Task
             [self finishCurrentTask:taskValue];
@@ -1547,13 +1488,13 @@
             
             NSLog(@"Upload error:%@",error);
             NSString *info = [NSString stringWithFormat:@"Error:图片上传失败，.%@",error.description];
-            [self newLogWithInfo:info time:[NSDate date]];
+            [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
             
             [self showAlertTitle:@"提醒：" message:@"签发失败，请重新点击“签发”！"];
         }];
     }else{
         NSString *info = [NSString stringWithFormat:@"Error:网络中断,上传签写图片失败."];
-        [self newLogWithInfo:info time:[NSDate date]];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
         
         [self showAlertTitle:@"服务器" message:@"连接中断，请检查网络！"];
     }
@@ -1602,15 +1543,16 @@
             
             // 日志记录
             NSString *info = [NSString stringWithFormat:@"OK:签发文件-%@-成功.",document.fileName];
-            [self newLogWithInfo:info time:[NSDate date]];
+            [OATools newLogWithInfo:info time:[NSDate date] type:kLogInfoType];
             
             // 签发成功，退出文档
             [delegate dismissReaderViewController:self withDocument:document withTag:@1]; // Dismiss the ReaderViewController
+//            [self.navigationController popToRootViewControllerAnimated:YES];
         }else
         {
             // 日志记录
             NSString *info = [NSString stringWithFormat:@"Error:签发文件-%@-失败.%@",document.fileName,responseObject];
-            [self newLogWithInfo:info time:[NSDate date]];
+            [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
             
             [self showAlertTitle:@"签发失败" message:@"web程序异常"];
         }
@@ -1624,7 +1566,7 @@
         NSLog(@"%@", error.description);
         
         NSString *info = [NSString stringWithFormat:@"Error:签发文件-%@-失败.%@",document.fileName,error.description];
-        [self newLogWithInfo:info time:[NSDate date]];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
         // AlertView 失败提示
         NSString *message = [[error userInfo] objectForKey:@"NSLocalizedDescription"];
         [self showAlertTitle:@"签发失败" message:message];

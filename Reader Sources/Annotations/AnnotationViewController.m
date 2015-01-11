@@ -8,6 +8,7 @@
 
 #import "AnnotationViewController.h"
 #import "drawingView.h"
+#import "DiscoveryPopoverViewController.h"
 
 NSString *const AnnotationViewControllerType_None   = @"None";
 NSString *const AnnotationViewControllerType_Sign   = @"Sign";
@@ -25,10 +26,17 @@ CGFloat const BLACK_LINE_WIDTH = 1.0;
 CGFloat const ERASE_LINE_WIDTH = 50.0;
 
 @interface AnnotationViewController () <UITextViewDelegate>
-
+{
+    DiscoveryPopoverViewController *_mDiscoveredTable;
+    UIPopoverController * _mPopoverController;
+    UISegmentedControl *_handednessControl;
+    UISegmentedControl *_toolBar;
+    drawingView *_pageDrawingView;
+}
 @end
 
-@implementation AnnotationViewController {
+@implementation AnnotationViewController
+{
     CGPoint lastPoint;
     CGPoint currentPoint;
     
@@ -53,9 +61,7 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
     UITextField *textField;
     UIView *eraseView;
     UITextView *_textView;
-    UIImage *_userEsign;
     UIImageView *_eSignImage;
-    drawingView *_pageDrawingView;
     
     BOOL keyBoardOffset;
 }
@@ -93,8 +99,6 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
     self.view.userInteractionEnabled = ![self.annotationType isEqualToString:AnnotationViewControllerType_None];
     self.view.opaque = NO;
     self.view.backgroundColor = [UIColor clearColor];
-    // 初始化用户的签名图片
-    [self initEsignImage];
     
     imageArray = [NSMutableArray array];
     imageDictionary = [NSMutableDictionary dictionary];
@@ -106,18 +110,7 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
-- (void)initEsignImage{
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSString *base64Img = [userDefaults objectForKey:kESignImage];
-    
-    if(base64Img.length > 0){
-        NSData *signData = [[NSData alloc] initWithBase64EncodedString:base64Img options:0];
-        _userEsign = [UIImage imageWithData:signData];
-    }else{
-        _userEsign = nil;
-    }
+    [[WacomManager getManager] deregisterForNotifications:self];
 }
 
 - (UIImageView*) createImageView {
@@ -162,9 +155,18 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
 }
 
 - (UIImageView *)createESignImageView{
-//    UIImageView *eSignImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"sqheSign.png"]];
-    if (_userEsign) {
-        UIImageView *eSignImageView = [[UIImageView alloc] initWithImage:_userEsign];
+    UIImage *userEsignImage = nil;
+    
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSString *base64Img = [userDefaults objectForKey:kESignImage];
+    if(base64Img.length > 0){
+        NSData *signData = [[NSData alloc] initWithBase64EncodedString:base64Img options:0];
+        userEsignImage = [UIImage imageWithData:signData];
+    }
+    
+    // 初始化用户的签名图片
+    if (userEsignImage) {
+        UIImageView *eSignImageView = [[UIImageView alloc] initWithImage:userEsignImage];
         CGRect newFrame = eSignImageView.frame;
         newFrame.size.height = 35;
         newFrame.size.width = newFrame.size.height * eSignImageView.frame.size.width / eSignImageView.frame.size.height;
@@ -181,60 +183,46 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
 
 - (drawingView *)createPageDrawingView{
     drawingView *drawView = [[drawingView alloc] initWithFrame:pageView.frame];
+    drawView.backgroundColor = [UIColor lightGrayColor];
     return drawView;
 }
 
-- (void) moveToPage:(int)page contentView:(ReaderContentView*) view {
+- (BOOL) moveToPage:(int)page contentView:(ReaderContentView*) view {
     if (page != self.currentPage || !pageView) {
         [self finishCurrentAnnotation];
         
         self.currentPage = page;
 //        pageView = [view contentView];
         pageView = (UIView *)view.theContentPage;
-//        NSLog(@"%@,%@",NSStringFromCGRect(self.view.frame),NSStringFromCGRect(pageView.frame));
         
-        //Create a new one because the old one may be deallocated or have a deallocated parent
-        //First, erase any contents though
-//        if (imageView.superview != nil) {
-//            imageView.image = nil;
-//        }
-//        if (textField.superview != nil) {
-//            textField.hidden = YES;
-//        }
-//        if (_textView.superview != nil) {
-//            _textView.hidden = YES;
-//        }
-//        if (_eSignImage.superview != nil) {
-//            _eSignImage.hidden = YES;
-//        }
-//        if (_pageDrawingView.subviews != nil) {
-//            _pageDrawingView.hidden = YES;
-//        }
         imageView = nil;
         imageView = [self createImageView];
         [pageView addSubview:imageView];
         
-        textField = nil;
-        textField = [self createTextField];
-        [pageView addSubview:textField];
-        
-        _textView = nil;
-        _textView = [self createTextView];
-        [pageView addSubview:_textView];
-        
-        eraseView = nil;
-        eraseView = [self createEraseView];
-        [pageView addSubview:eraseView];
-        
-        _eSignImage = nil;
-        _eSignImage = [self createESignImageView];
-        [pageView addSubview:_eSignImage];
-        
-        _pageDrawingView = nil;
-        _pageDrawingView = [self createPageDrawingView];
-        [pageView addSubview:_pageDrawingView];
+//        textField = nil;
+//        textField = [self createTextField];
+//        [pageView addSubview:textField];
+//        
+//        _textView = nil;
+//        _textView = [self createTextView];
+//        [pageView addSubview:_textView];
+//        
+//        eraseView = nil;
+//        eraseView = [self createEraseView];
+//        [pageView addSubview:eraseView];
+//        
+//        _eSignImage = nil;
+//        _eSignImage = [self createESignImageView];
+//        [pageView addSubview:_eSignImage];
+//        
+//        _pageDrawingView = nil;
+//        _pageDrawingView = [self createPageDrawingView];
+//        [pageView addSubview:_pageDrawingView];
         
         [self refreshDrawing];
+        return YES;
+    }else{
+        return NO;
     }
 }
 
@@ -259,6 +247,7 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
         [self finishCurrentAnnotation];
     }
     _annotationType = annotationType;
+    [self refreshDrawing];
     self.view.userInteractionEnabled = ![self.annotationType isEqualToString:AnnotationViewControllerType_None];
     
     if ([self.annotationType isEqualToString:AnnotationViewControllerType_Text]) {
@@ -268,14 +257,17 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
         _eSignImage = [self createESignImageView];
         [pageView addSubview:_eSignImage];
     }else if ([self.annotationType isEqualToString:AnnotationViewControllerType_EPen]){
-        [_pageDrawingView setHidden:NO];
+//        [_pageDrawingView setHidden:NO];
+        _pageDrawingView = [self createPageDrawingView];
+        [pageView addSubview:_pageDrawingView];
+        [self initDrawView];
     }
 }
 
 - (void) finishCurrentAnnotation {
     Annotation* annotation = [self getCurrentAnnotation];
     if (annotation) {
-        [self refreshDrawing];
+//        [self refreshDrawing];
         [annotationStore addAnnotation:annotation toPage:(int)self.currentPage];
         
         // 保存当前签写的透明图片
@@ -308,6 +300,7 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
         }else if ([self.annotationType isEqualToString:AnnotationViewControllerType_EPen]){
             [_pageDrawingView removeFromSuperview];
             _pageDrawingView = nil;
+            [self hideDrawView];
         }
     }
     
@@ -344,9 +337,9 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
         }
     } else if ([self.annotationType isEqualToString:AnnotationViewControllerType_EPen]) { //电子笔图片状态
 //        if (_eSignImage.frame.origin.x>0 && _eSignImage.frame.origin.y>10) {
-            return [ImageAnnotation imageAnnotationWithImage:[[_pageDrawingView glToUIImage] CGImage] inRect:[_pageDrawingView frame]];
+//            return [ImageAnnotation imageAnnotationWithImage:[[_pageDrawingView glToUIImage] CGImage] inRect:[_pageDrawingView frame]];
 //        }else{
-//            return nil;
+            return nil;
 //        }
     } else if ([self.annotationType isEqualToString:AnnotationViewControllerType_Sign] || [self.annotationType isEqualToString:AnnotationViewControllerType_RedPen] || [self.annotationType isEqualToString:AnnotationViewControllerType_Erase]){//绘制状态（红笔、黑笔、橡皮擦除）
         if (!currPath && [currentPaths count] == 0) {
@@ -404,23 +397,24 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
 - (void) refreshDrawing {
     UIGraphicsBeginImageContextWithOptions(pageView.frame.size, NO, 1.5f);
     CGContextRef currentContext = UIGraphicsGetCurrentContext();
-    
-    //Draw previous paths
-    [annotationStore drawAnnotationsForPage:(int)self.currentPage inContext:currentContext];
-    
-//    if ([self.annotationType isEqualToString:AnnotationViewControllerType_Sign]) {
-        if (_textView.text.length > 0 && (_textView.frame.origin.x>0 && _textView.frame.origin.y>0)) {
-            UIGraphicsPushContext(currentContext);
-            CGContextSetTextMatrix(currentContext, CGAffineTransformMake(1.0,0.0, 0.0, -1.0, 0.0, 0.0));
-            CGContextSetTextDrawingMode(currentContext, kCGTextFill);
-            CGContextSetFillColorWithColor(currentContext, [[UIColor blackColor] CGColor]);
-            CGRect newTextFrame = _textView.frame;
-            newTextFrame.origin.x += 5;
-            newTextFrame.origin.y += 7;
-            [_textView.text drawInRect:newTextFrame withAttributes:@{NSFontAttributeName:_textView.font}];
-            UIGraphicsPopContext();
+    if (currentContext) {
+        //Draw previous paths
+        [annotationStore drawAnnotationsForPage:(int)self.currentPage inContext:currentContext];
+        
+        if ([self.annotationType isEqualToString:AnnotationViewControllerType_Sign]) {
+            if (_textView.text.length > 0 && (_textView.frame.origin.x>0 && _textView.frame.origin.y>0)) {
+                UIGraphicsPushContext(currentContext);
+                CGContextSetTextMatrix(currentContext, CGAffineTransformMake(1.0,0.0, 0.0, -1.0, 0.0, 0.0));
+                CGContextSetTextDrawingMode(currentContext, kCGTextFill);
+                CGContextSetFillColorWithColor(currentContext, [[UIColor blackColor] CGColor]);
+                CGRect newTextFrame = _textView.frame;
+                newTextFrame.origin.x += 5;
+                newTextFrame.origin.y += 7.22;
+                [_textView.text drawInRect:newTextFrame withAttributes:@{NSFontAttributeName:_textView.font}];
+                UIGraphicsPopContext();
+            }
         }
-//    }else if ([self.annotationType isEqualToString:AnnotationViewControllerType_ESign]){
+        //    }else if ([self.annotationType isEqualToString:AnnotationViewControllerType_ESign]){
         if (_eSignImage.frame.origin.x>0 && _eSignImage.frame.origin.y >0) {
             CGContextSaveGState(currentContext);
             CGContextTranslateCTM(currentContext, _eSignImage.frame.origin.x, _eSignImage.frame.origin.y);
@@ -441,8 +435,19 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
             [dateTime drawInRect:dateFrame withAttributes:@{NSFontAttributeName:[UIFont systemFontOfSize:10.0]}];
             UIGraphicsPopContext();
         }
-//    }
-//    }else{
+        //    }
+        //    }else{
+        //        if ([_pageDrawingView glToUIImage]) {
+        //            CGContextSaveGState(currentContext);
+        //            CGContextTranslateCTM(currentContext, pageView.frame.origin.x, pageView.frame.origin.y);
+        //            CGContextTranslateCTM(currentContext, 0, pageView.frame.size.height);
+        //            CGContextScaleCTM(currentContext, 1.0, -1.0);
+        //            CGContextTranslateCTM(currentContext, -pageView.frame.origin.x, -pageView.frame.origin.y);
+        //            CGContextDrawImage(currentContext, pageView.frame, [_pageDrawingView glToUIImage].CGImage);
+        //
+        //            CGContextRestoreGState(currentContext);
+        //        }
+        
         CGContextSetShouldAntialias(currentContext, YES);
         CGContextSetAllowsAntialiasing(currentContext, YES);
         CGContextSetLineJoin(currentContext, kCGLineJoinRound);//线条拐角
@@ -479,10 +484,11 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
         
         //paint a line along the current path
         CGContextStrokePath(currentContext);
-//    }
-
-    //Saving
-    imageView.image = UIGraphicsGetImageFromCurrentImageContext();
+        //    }
+        
+        //Saving
+        imageView.image = UIGraphicsGetImageFromCurrentImageContext();
+    }
     UIGraphicsEndImageContext();
 }
 
@@ -506,7 +512,6 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
 //            _textView.alpha = 1.0;
             _textView.center = lastPoint;
         }
-//        NSLog(@"touch.y:%f,  height:%f,   keyOffset:%d, pageview.view.frame:%@",[touch locationInView:self.view].y,_textView.frame.size.height,!keyBoardOffset,NSStringFromCGRect(pageView.frame));
         if ([touch locationInView:self.view].y + _textView.frame.size.height + 216 + 94 > self.view.frame.size.height && !keyBoardOffset) {
             [self.delegate keyboardWillShow:216 + 94];
             keyBoardOffset = YES;
@@ -516,6 +521,8 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
         _eSignImage.alpha = 1.0;
         _eSignImage.hidden = NO;
         _eSignImage.center = lastPoint;
+    }else if ([self.annotationType isEqualToString:AnnotationViewControllerType_EPen]) {
+        
     }else {
         if ([self.annotationType isEqualToString:AnnotationViewControllerType_Erase]) {
             eraseView.center = CGPointMake(lastPoint.x, lastPoint.y);
@@ -561,7 +568,9 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
         }
     } else if ([self.annotationType isEqualToString:AnnotationViewControllerType_ESign]) {
         _eSignImage.center = lastContactPoint1;
-    }else{
+    }else if([self.annotationType isEqualToString:AnnotationViewControllerType_EPen]){
+        
+    }else {
         if ([self.annotationType isEqualToString:AnnotationViewControllerType_Erase]) {
             eraseView.center = CGPointMake(currentPoint.x, currentPoint.y);
         }
@@ -602,7 +611,7 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
         }];
     }
 
-    if (!didMove) {
+    if (!didMove && ![self.annotationType isEqualToString:AnnotationViewControllerType_EPen]) {
         currentPoint = [touch locationInView:pageView];
         CGFloat penSize = [self.annotationType isEqualToString:AnnotationViewControllerType_Sign] ? BLACK_LINE_WIDTH : RED_LINE_WIDTH ;
         // One/Single point touch
@@ -689,6 +698,242 @@ CGFloat const ERASE_LINE_WIDTH = 50.0;
     if (keyBoardOffset) {
         [self.delegate keyboardDidHidden: 216+94];
         keyBoardOffset = NO;
+    }
+}
+
+#pragma mark - Draw View Method
+- (void)initDrawView
+{
+    [[WacomManager getManager] registerForNotifications:self];
+    
+    NSArray *segmentArray1 = [NSArray arrayWithObjects:NSLocalizedString(@"左手习惯",@"Left Hand"),NSLocalizedString(@"右手习惯",@"Right Hand"), nil];
+    _handednessControl = [[UISegmentedControl alloc] initWithItems:segmentArray1];
+    _handednessControl.frame = CGRectMake(40, 80, 200, 60);
+    _handednessControl.selectedSegmentIndex = 1;
+    _handednessControl.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin;
+    [_handednessControl addTarget:self action:@selector(SegControlSetHandedness:) forControlEvents:UIControlEventValueChanged];
+    [self.view addSubview:_handednessControl];
+    
+    NSArray *segmentArray2 = [NSArray arrayWithObjects:NSLocalizedString(@"笔", @"pen"),NSLocalizedString(@"清除", @"clear"),NSLocalizedString(@"触摸开关",@"touch"),NSLocalizedString(@"电量", @""),NSLocalizedString(@"保存", @"save"), nil];
+    _toolBar = [[UISegmentedControl alloc] initWithItems:segmentArray2];
+    _toolBar.frame = CGRectMake(0, 80, 300, 40);
+    _toolBar.center = CGPointMake(self.view.frame.size.width * 0.5, 60);
+    _toolBar.selectedSegmentIndex = 3;
+    _toolBar.momentary = YES;
+    _toolBar.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth;
+    [_toolBar addTarget:self action:@selector(SegControlPerformAction:) forControlEvents:UIControlEventValueChanged];
+    [self.view addSubview:_toolBar];
+    
+    [_toolBar setTitle:@"" forSegmentAtIndex:3];
+    [[TouchManager GetTouchManager] setHandedness:eh_Right];
+    [[TouchManager GetTouchManager] setTimingOffset:55000];
+}
+
+- (void)hideDrawView
+{
+    [_handednessControl removeFromSuperview];
+    [_toolBar removeFromSuperview];
+    [[WacomManager getManager] deregisterForNotifications:self];
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Function:showPopover
+// Notes: registers for discovery related callbacks and sets up the window to show discovery
+// status and results.
+- (IBAction)showPopover:(UIView *)sender
+{
+    if(_mDiscoveredTable == nil)
+    {
+        _mDiscoveredTable = [[DiscoveryPopoverViewController alloc] init];
+    }
+    
+    //allocates and sizes the window.
+    if(!_mPopoverController)
+    {
+        _mPopoverController =  [[UIPopoverController alloc] initWithContentViewController:_mDiscoveredTable];
+        _mPopoverController.popoverContentSize = CGSizeMake(280., 320.);
+        _mPopoverController.delegate = self;
+    }
+    
+    // initiates discovery
+    [[WacomManager getManager] startDeviceDiscovery];
+    
+    // shows the discovery popover.
+    [_mPopoverController presentPopoverFromRect:sender.frame inView:self.view permittedArrowDirections:UIPopoverArrowDirectionAny animated:YES];
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Function: toggleTouchRejection
+// Notes: enables or disables touch rejection based on the previous state.
+-(void) toggleTouchRejection
+{
+    NSString *message   = nil;
+    NSString *title     = NSLocalizedString(@"触感屏蔽", @"Touch Rejection");
+    
+    if([TouchManager GetTouchManager].touchRejectionEnabled == YES)
+    {
+        [TouchManager GetTouchManager].touchRejectionEnabled = NO;
+    }
+    else
+    {
+        [TouchManager GetTouchManager].touchRejectionEnabled = YES;
+    }
+    
+    if([TouchManager GetTouchManager].touchRejectionEnabled == YES)
+        message = NSLocalizedString(@"您已打开触感屏蔽", @"You have turned ON touch rejection.");
+    else
+        message = NSLocalizedString(@"您已关闭触感屏蔽", @"You have turned OFF touch rejection.");
+    
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:title message:message delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+    [alertView show];
+    
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Function: toggleTouchRejection
+// Notes: enables or disables touch rejection based on the previous state.
+-(IBAction)showPrivacyMessage:(UIButton *)sender
+{
+    NSString *message   = nil;
+    NSString *title     = @"Privacy Info";
+    
+    message = @"This app does not collect information about its users. Only previous pairings are stored and they are stored locally. This app does not phone home.";
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:title message:message delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+    [alertView show];
+    
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Function: SegControlSetHandedness
+// Notes: controls pairing, toggles touch rejection, and erases the screen when the
+// segmented control is clicked.
+- (IBAction)SegControlSetHandedness:(UISegmentedControl *)sender
+{
+    
+    switch(sender.selectedSegmentIndex)
+    {
+        case 0:
+            // Initiates the pairing mode popover.
+            [[TouchManager GetTouchManager] setHandedness:eh_Left];
+            break;
+        case 1:
+            // Clears the screen
+            [[TouchManager GetTouchManager] setHandedness:eh_Right];
+            break;
+        default:
+            break;
+    };
+    
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Function: SegControlPerformAction
+// Notes: controls pairing, toggles touch rejection, and erases the screen when the
+// segmented control is clicked.
+- (IBAction)SegControlPerformAction:(UISegmentedControl *)sender
+{
+    
+    switch(sender.selectedSegmentIndex)
+    {
+        case 0:
+            // Initiates the pairing mode popover.
+            [self showPopover:sender];
+            break;
+        case 1:
+            // Clears the screen
+            [_pageDrawingView erase];
+            break;
+        case 2:
+            // Toggles touch rejection on and off.
+            [self toggleTouchRejection];
+            break;
+        case 4:
+            // Save Image
+            [self saveImage:[_pageDrawingView glToUIImage]];
+            break;
+        default:
+            break;
+    };
+    
+}
+
+- (void)saveImage:(UIImage *)theDrawedImage
+{
+    NSData *pngData = UIImagePNGRepresentation(theDrawedImage);
+    // Only save the first page annotation image(png)
+    if (self.currentPage <= 1) {
+        NSString *signPngName = [NSString stringWithFormat:@"%@.png",_document.fileId];
+        NSString *filePath = [kDocumentPath stringByAppendingPathComponent:signPngName]; //Add the file name
+        [pngData writeToFile:filePath atomically:YES]; //Write the file
+    }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Function:deviceDiscovered
+// Notes: just add the device to the discovered table. demonstrates signal strength
+-(void) deviceDiscovered:(WacomDevice *)device
+{
+    //	NSLog(@"signal strength %i", [device getSignalStrength]);
+    [_mDiscoveredTable addDevice:device];
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Function:deviceConnected
+// Notes: update the device table then dismiss the popover.
+-(void) deviceConnected:(WacomDevice *)device
+{
+    [_mDiscoveredTable updateDevices:device];
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Function:deviceDisconnected
+// Notes: remove the device then dismiss the popover
+-(void)deviceDisconnected:(WacomDevice *)device
+{
+    [_mDiscoveredTable removeDevice:device];
+    [_toolBar setTitle:@"" forSegmentAtIndex:3];
+    
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Function: discoveryStatePoweredOff
+// Notes: if the power is off, it pops a warning dialog.
+-(void)discoveryStatePoweredOff
+{
+    NSString *title     = NSLocalizedString(@"蓝牙开关", @"Bluetooth Power");//@"Bluetooth Power"
+    NSString *message   = NSLocalizedString(@"请在设置中打开蓝牙", @"You must turn on Bluetooth in Settings");//@"You must turn on Bluetooth in Settings";
+    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:title message:message delegate:nil cancelButtonTitle:NSLocalizedString(@"好的", @"OK") otherButtonTitles:nil];
+    [alertView show];
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Function:stylusEvent
+// Notes: update the battery status segment in the tool bar.
+-(void)stylusEvent:(WacomStylusEvent *)stylusEvent
+{
+    switch ([stylusEvent getType])
+    {
+        case eStylusEventType_BatteryLevelChanged:
+            [_toolBar setTitle:[NSString stringWithFormat:@"%lu%%", [stylusEvent getBatteryLevel] ] forSegmentAtIndex:3];
+        default:
+            break;
     }
 }
 

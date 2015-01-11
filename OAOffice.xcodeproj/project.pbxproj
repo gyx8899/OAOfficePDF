@@ -85,6 +85,11 @@
 		848C3C091A591898000ED1CF /* User-Download.png in Resources */ = {isa = PBXBuildFile; fileRef = 848C3C071A591898000ED1CF /* User-Download.png */; };
 		848C3C0A1A591898000ED1CF /* User-Download@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 848C3C081A591898000ED1CF /* User-Download@2x.png */; };
 		848C3C111A593B42000ED1CF /* INSSearchBar.m in Sources */ = {isa = PBXBuildFile; fileRef = 848C3C101A593B42000ED1CF /* INSSearchBar.m */; };
+		848D9A0B1A5FBAB700FB975C /* User-Header.png in Resources */ = {isa = PBXBuildFile; fileRef = 848D9A091A5FBAB700FB975C /* User-Header.png */; };
+		848D9A0C1A5FBAB700FB975C /* User-Header@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 848D9A0A1A5FBAB700FB975C /* User-Header@2x.png */; };
+		848D9A0F1A60049300FB975C /* Reader-Close.png in Resources */ = {isa = PBXBuildFile; fileRef = 848D9A0D1A60049200FB975C /* Reader-Close.png */; };
+		848D9A101A60049300FB975C /* Reader-Close@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 848D9A0E1A60049300FB975C /* Reader-Close@2x.png */; };
+		848D9A131A60B7E200FB975C /* OATools.m in Sources */ = {isa = PBXBuildFile; fileRef = 848D9A121A60B7E200FB975C /* OATools.m */; };
 		8499711B19814F22007FA9BF /* Icon-72.png in Resources */ = {isa = PBXBuildFile; fileRef = 849970F119814F22007FA9BF /* Icon-72.png */; };
 		8499711C19814F22007FA9BF /* Icon-72@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 849970F219814F22007FA9BF /* Icon-72@2x.png */; };
 		8499711D19814F22007FA9BF /* Icon-Small-50.png in Resources */ = {isa = PBXBuildFile; fileRef = 849970F319814F22007FA9BF /* Icon-Small-50.png */; };
@@ -327,6 +332,12 @@
 		848C3C081A591898000ED1CF /* User-Download@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "User-Download@2x.png"; sourceTree = "<group>"; };
 		848C3C0F1A593B42000ED1CF /* INSSearchBar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = INSSearchBar.h; sourceTree = "<group>"; };
 		848C3C101A593B42000ED1CF /* INSSearchBar.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = INSSearchBar.m; sourceTree = "<group>"; };
+		848D9A091A5FBAB700FB975C /* User-Header.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "User-Header.png"; sourceTree = "<group>"; };
+		848D9A0A1A5FBAB700FB975C /* User-Header@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "User-Header@2x.png"; sourceTree = "<group>"; };
+		848D9A0D1A60049200FB975C /* Reader-Close.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Reader-Close.png"; sourceTree = "<group>"; };
+		848D9A0E1A60049300FB975C /* Reader-Close@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Reader-Close@2x.png"; sourceTree = "<group>"; };
+		848D9A111A60B7E200FB975C /* OATools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OATools.h; sourceTree = "<group>"; };
+		848D9A121A60B7E200FB975C /* OATools.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OATools.m; sourceTree = "<group>"; };
 		849970F119814F22007FA9BF /* Icon-72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72.png"; sourceTree = "<group>"; };
 		849970F219814F22007FA9BF /* Icon-72@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-72@2x.png"; sourceTree = "<group>"; };
 		849970F319814F22007FA9BF /* Icon-Small-50.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-Small-50.png"; sourceTree = "<group>"; };
@@ -626,6 +637,8 @@
 			isa = PBXGroup;
 			children = (
 				848C3BA21A5845E4000ED1CF /* Reader-Annotate.png */,
+				848D9A0D1A60049200FB975C /* Reader-Close.png */,
+				848D9A0E1A60049300FB975C /* Reader-Close@2x.png */,
 				848C3BA31A5845E4000ED1CF /* Reader-Annotate@2x.png */,
 				848C3BA41A5845E4000ED1CF /* Reader-Back.png */,
 				848C3BA51A5845E4000ED1CF /* Reader-Back@2x.png */,
@@ -701,8 +714,6 @@
 		849970EC19814F22007FA9BF /* Image */ = {
 			isa = PBXGroup;
 			children = (
-				84DFB2FE1A5D088F00EC5FA1 /* User-Trash.png */,
-				84DFB2FF1A5D088F00EC5FA1 /* User-Trash@2x.png */,
 				847C2CAE19A59C970091EC68 /* BookShelfCell.png */,
 				84EE1BD51988C9BA0067E3CD /* FileImage */,
 				84F94A5F1A0F4CF30098E95E /* Finger.png */,
@@ -720,8 +731,12 @@
 				848C3C081A591898000ED1CF /* User-Download@2x.png */,
 				848C3B7F1A57C513000ED1CF /* User-Exit.png */,
 				848C3B801A57C513000ED1CF /* User-Exit@2x.png */,
+				848D9A091A5FBAB700FB975C /* User-Header.png */,
+				848D9A0A1A5FBAB700FB975C /* User-Header@2x.png */,
 				848C3B911A57D1DC000ED1CF /* User-Home.png */,
 				848C3B921A57D1DC000ED1CF /* User-Home@2x.png */,
+				84DFB2FE1A5D088F00EC5FA1 /* User-Trash.png */,
+				84DFB2FF1A5D088F00EC5FA1 /* User-Trash@2x.png */,
 			);
 			path = Image;
 			sourceTree = "<group>";
@@ -1021,6 +1036,8 @@
 				84E0DA011990CA34001BBE46 /* DocumentFolder.m */,
 				84F8C8D01980F05400C99DE7 /* Supporting Files */,
 				84DFB2FD1A5A59CE00EC5FA1 /* OACommon.h */,
+				848D9A111A60B7E200FB975C /* OATools.h */,
+				848D9A121A60B7E200FB975C /* OATools.m */,
 				84E1DC7B1A008E6200A029D0 /* Launch Screen.xib */,
 			);
 			path = OAOffice;
@@ -1305,6 +1322,7 @@
 				848C3BEA1A5845E5000ED1CF /* Reader-Mark-Y.png in Resources */,
 				848C3BD61A5845E4000ED1CF /* Reader-Cancel.png in Resources */,
 				848C3BF41A5845E5000ED1CF /* Reader-Sign-Selected.png in Resources */,
+				848D9A0B1A5FBAB700FB975C /* User-Header.png in Resources */,
 				8499711E19814F22007FA9BF /* Icon-Small-50@2x.png in Resources */,
 				848C3BF71A5845E5000ED1CF /* Reader-Sign@2x.png in Resources */,
 				848C3BF31A5845E5000ED1CF /* Reader-Reply@2x.png in Resources */,
@@ -1329,10 +1347,13 @@
 				84EE1BF41989FC290067E3CD /* File-V-Urgent.png in Resources */,
 				848C3B931A57D1DC000ED1CF /* User-Home.png in Resources */,
 				84EE1BF11989FC290067E3CD /* File-Common@2x.png in Resources */,
+				848D9A101A60049300FB975C /* Reader-Close@2x.png in Resources */,
 				848C3BFA1A5845E5000ED1CF /* Reader-Submit.png in Resources */,
 				84EE1BF31989FC290067E3CD /* File-Urgent@2x.png in Resources */,
+				848D9A0C1A5FBAB700FB975C /* User-Header@2x.png in Resources */,
 				84BF176F1994706D00134E2F /* OfficialDoc.plist in Resources */,
 				848C3BD41A5845E4000ED1CF /* Reader-Back.png in Resources */,
+				848D9A0F1A60049300FB975C /* Reader-Close.png in Resources */,
 				84F8C8DD1980F05400C99DE7 /* Main.storyboard in Resources */,
 				84C2849919B1CDD2009088F9 /* Icon-60@2x.png in Resources */,
 				848C3BFF1A5845E5000ED1CF /* Reader-Text@2x.png in Resources */,
@@ -1412,6 +1433,7 @@
 				849AA4E81A144910002F2211 /* UIView+MJExtension.m in Sources */,
 				84C12D6B198B406E00C3547F /* ReaderAnnotateToolbar.m in Sources */,
 				84EE1BE4198926D90067E3CD /* OAPDFFlowLayout.m in Sources */,
+				848D9A131A60B7E200FB975C /* OATools.m in Sources */,
 				84FB386B1A490FCF00EF8644 /* OAUserListVC.m in Sources */,
 				8499715F19822C07007FA9BF /* UIScrollView+MJRefresh.m in Sources */,
 				84BA7B1A1997A68B0076A597 /* OAProgressLayer.m in Sources */,

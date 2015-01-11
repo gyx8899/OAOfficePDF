@@ -113,8 +113,9 @@
     }
     cell.selectionStyle         = UITableViewCellSelectionStyleBlue;
     cell.accessoryType  = UITableViewCellAccessoryCheckmark;
+    cell.imageView.image = [UIImage imageNamed:@"User-Header"];
     cell.textLabel.text = [_resultUsers[indexPath.row] objectForKey:@"name"];
-    cell.detailTextLabel.text = [_resultUsers[indexPath.row] objectForKey:@"userName"];
+    cell.detailTextLabel.text = [_resultUsers[indexPath.row] objectForKey:@"groupName"];
     
     return cell;
 }

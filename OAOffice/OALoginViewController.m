@@ -185,7 +185,7 @@
                     [userDefaults setObject:userN forKey:kUserName];
                     
                     NSString *info = [NSString stringWithFormat:@"OK:客户端新用户:%@,老户名:%@",userN,lastUserName];
-                    [self newLogWithInfo:info time:[NSDate date]];
+                    [OATools newLogWithInfo:info time:[NSDate date] type:kLogInfoType];
                 }
                 [userDefaults setObject:[self getAuthorizationWithUserName:userN password:passW] forKey:kAuthorizationHeader];
                 [userDefaults setObject:[resultDic objectForKey:kName] forKey:kName];
@@ -200,13 +200,13 @@
                 [userDefaults synchronize];
                 
                 NSString *info = [NSString stringWithFormat:@"OK:登录成功,用户名:%@",userN];
-                [self newLogWithInfo:info time:[NSDate date]];
+                [OATools newLogWithInfo:info time:[NSDate date] type:kLogInfoType];
                 
                 // 跳转到OADetailViewController，并刷新数据
                 [self.delegate dismissOALoginViewController:self];
             }else{
                 NSString *info = [NSString stringWithFormat:@"Error:登录失败,用户名或密码错误.%@,result:%@",userN,(NSString *)responseObject];
-                [self newLogWithInfo:info time:[NSDate date]];
+                [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
                 
                 // AlertView 失败提示
                 UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"登录失败" message:@"用户名或密码错误" delegate:self cancelButtonTitle:@"重新登录" otherButtonTitles:nil, nil];
@@ -220,9 +220,9 @@
             [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
             // 日志记录
             NSString *info = [NSString stringWithFormat:@"Error:登录失败.%@",error.description];
-            [self newLogWithInfo:info time:[NSDate date]];
+            [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
             
-            NSLog(@"%@", error.description);
+//            NSLog(@"%@", error.description);
             // AlertView 失败提示
             NSString *message = [[error userInfo] objectForKey:@"NSLocalizedDescription"];
             UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"登录失败" message:message delegate:self cancelButtonTitle:@"好的" otherButtonTitles:nil, nil];
@@ -230,7 +230,7 @@
         }];
     }else{
         NSString *info = [NSString stringWithFormat:@"Error:网络中断,登录失败.%@",userN];
-        [self newLogWithInfo:info time:[NSDate date]];
+        [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
         
         UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"网络中断" message:@"请检查网络是否打开" delegate:self cancelButtonTitle:@"好的" otherButtonTitles:nil, nil];
         [alert show];
@@ -306,25 +306,6 @@
 {
     [self loginPressed:self.loginBtn];
     return YES;
-}
-
-#pragma mark - Add log info to plist
-- (void)newLogWithInfo:(NSString *)info time:(NSDate *)currentDate
-{
-    dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-        NSString *userName = [userDefaults objectForKey:kUserName];
-        NSString *deviceUUID = [userDefaults objectForKey:kDeviceInfo];
-        NSString *plistPath = [userDefaults objectForKey:kPlistPath];
-        NSDictionary *logDic = [NSDictionary dictionaryWithObjectsAndKeys:userName,kUserName,deviceUUID,kDeviceInfo,currentDate,kLogTime,info,kLogInfo, nil];
-        NSMutableDictionary *docPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:plistPath];
-        if (!docPlist) {
-            docPlist = [NSMutableDictionary dictionary];
-        }
-        [docPlist setObject:logDic forKey:[NSString stringWithFormat:@"%@",currentDate]];
-        //写入文件
-        [docPlist writeToFile:plistPath atomically:YES];
-    });
 }
 
 @end

@@ -233,29 +233,13 @@ static void uploadLogFile(){
 static void uploadLogFileWithPath(NSString *path){
     //通过指定的路径读取文本内容
     NSError *error = nil;
-    NSDictionary *fileAttributes = [[NSFileManager defaultManager] attributesOfFileSystemForPath:path error:&error];
-    NSDate *fileDate = [fileAttributes objectForKey:@"fileCreationDate"];
     NSString *info = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:&error];
     NSString *logInfo = [NSString stringWithFormat:@"Error:Crash日志。%@",info];
-    NSLog(@"%@",logInfo);
-    
-    dispatch_async(dispatch_get_global_queue(0, 0), ^{
-        NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-        NSString *userName = [userDefaults objectForKey:kUserName];
-        NSString *deviceUUID = [userDefaults objectForKey:kDeviceInfo];
-        NSString *plistPath = [userDefaults objectForKey:kPlistPath];
-        NSDictionary *logDic = [NSDictionary dictionaryWithObjectsAndKeys:userName,kUserName,deviceUUID,kDeviceInfo,fileDate,kLogTime,logInfo,kLogInfo, nil];
-        NSMutableDictionary *docPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:plistPath];
-        if (!docPlist) {
-            docPlist = [NSMutableDictionary dictionary];
-        }
-        [docPlist setObject:logDic forKey:[NSString stringWithFormat:@"%@",fileDate]];
-        // 写入文件
-        [docPlist writeToFile:plistPath atomically:YES];
-        // 删除Crash日志文件
-        NSFileManager *fileManager = [NSFileManager defaultManager];
-        [fileManager removeItemAtPath:path error:NULL];
-    });
+
+    [OATools newLogWithInfo:logInfo time:[NSDate date] type:kLogErrorType];
+    // 删除Crash日志文件
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    [fileManager removeItemAtPath:path error:NULL];
     //if success
     //    NSFileManager *fileManager = [NSFileManager defaultManager];
     //    [fileManager removeItemAtPath:path error:NULL];

@@ -171,8 +171,8 @@
             }
             
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-//            NSString *info = [NSString stringWithFormat:@"Error:获取最新公文失败错误.%@",error.description];
-//            [self newLogWithInfo:info time:[NSDate date]];
+            NSString *info = [NSString stringWithFormat:@"Error:刷新最历史公文失败错误.%@",error.description];
+            [OATools newLogWithInfo:info time:[NSDate date] type:kLogErrorType];
         }];
     }
 }
@@ -237,6 +237,24 @@
 {
     // The table view should not be re-orderable.
     return NO;
+}
+
+- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    if (0 == section) {
+        UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, tableView.frame.size.width, 20)];
+        UILabel *headTitle = [[UILabel alloc] initWithFrame:CGRectMake(15, 0, 200, 20)];
+        headTitle.text = @"您的已办公文";
+        [view addSubview:headTitle];
+        return view;
+    }else{
+        return nil;
+    }
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+{
+    return 20;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
@@ -456,7 +474,6 @@
             NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
             abort();
         }
-
     }
 }
 

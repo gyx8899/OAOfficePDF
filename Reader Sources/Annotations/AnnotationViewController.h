@@ -11,6 +11,7 @@
 #import "ReaderDocument.h"
 #import "Annotation.h"
 #import "ReaderContentView.h"
+#import <WacomDevice/WacomDeviceFramework.h>
 
 extern NSString *const AnnotationViewControllerType_None;
 extern NSString *const AnnotationViewControllerType_Sign;
@@ -28,7 +29,7 @@ extern NSString *const AnnotationViewControllerType_EPen;
 
 @end
 
-@interface AnnotationViewController : UIViewController<UIGestureRecognizerDelegate>
+@interface AnnotationViewController : UIViewController<UIGestureRecognizerDelegate, UIPopoverControllerDelegate, WacomDiscoveryCallback, WacomStylusEventCallback>
 
 @property UIImageView *image;
 @property NSMutableArray *imageArray;
@@ -40,7 +41,7 @@ extern NSString *const AnnotationViewControllerType_EPen;
 @property (nonatomic, assign) id<TextKeyboardNotificationDelegate> delegate;
 
 - (id)initWithDocument:(ReaderDocument *)document;
-- (void)moveToPage:(int)page contentView:(ReaderContentView*) view;
+- (BOOL)moveToPage:(int)page contentView:(ReaderContentView*) view;
 - (void) hide;
 - (void) clear;
 - (void) undo;
@@ -48,5 +49,30 @@ extern NSString *const AnnotationViewControllerType_EPen;
 - (AnnotationStore*) annotations;
 
 - (UIImage *)getImageFromAnnotationsWithPage:(int)page;
+
+//Draw View Segment Control
+- (void)SegControlPerformAction:(id)sender;
+- (void)showPrivacyMessage:(UIButton *)sender;
+
+//WacomDiscoveryCallback
+
+///notification method for when a device is connected.
+- (void) deviceConnected:(WacomDevice *)device;
+
+///notification method for when a device is disconnected.
+- (void) deviceDisconnected:(WacomDevice *)device;
+
+///notification method for when a device is discovered.
+- (void) deviceDiscovered:(WacomDevice *)device;
+
+
+///notification method for when device discovery is not possible because bluetooth is powered off.
+///this allows one to pop up a warning dialog to let the user know to turn on bluetooth.
+- (void) discoveryStatePoweredOff;
+
+//WacomStylusEventCallback
+///notification method for when a new stylus event is ready.
+-(void)stylusEvent:(WacomStylusEvent *)stylusEvent;
+
 
 @end

@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "OAOffice/ReaderDocument.m"
-            timestampString = "442315297.049605"
+            timestampString = "442654188.17927"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2723"
-            endingLineNumber = "2723">
+            startingLineNumber = "2729"
+            endingLineNumber = "2729">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -24,11 +24,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "OAOffice/ReaderDocument.m"
-            timestampString = "442315297.049605"
+            timestampString = "442654188.17927"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2721"
-            endingLineNumber = "2721">
+            startingLineNumber = "2727"
+            endingLineNumber = "2727">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
